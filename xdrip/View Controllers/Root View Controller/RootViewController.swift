@@ -13,9 +13,21 @@ final class RootViewController: UIViewController {
     
     // MARK: - Properties - Outlets and Actions for buttons and labels in home screen
     
-    @IBOutlet weak var calibrateButtonOutlet: UIButton!
+    @IBOutlet weak var preSnoozeToolbarButtonOutlet: UIBarButtonItem!
     
-    @IBAction func calibrateButtonAction(_ sender: UIButton) {
+    @IBAction func preSnoozeToolbarButtonAction(_ sender: UIBarButtonItem) {
+        //        // opens the SnoozeViewController, see storyboard
+    }
+    
+    @IBOutlet weak var sensorToolbarButtonOutlet: UIBarButtonItem!
+    
+    @IBAction func sensorToolbarButtonAction(_ sender: UIBarButtonItem) {
+        createAndPresentSensorButtonActionSheet()
+    }
+    
+    @IBOutlet weak var calibrateToolbarButtonOutlet: UIBarButtonItem!
+    
+    @IBAction func calibrateToolbarButtonAction(_ sender: UIBarButtonItem) {
         
         if let cgmTransmitter = self.bluetoothPeripheralManager?.getCGMTransmitter(), cgmTransmitter.isWebOOPEnabled() {
             
@@ -32,17 +44,6 @@ final class RootViewController: UIViewController {
         
     }
     
-    @IBOutlet weak var sensorButtonOutlet: UIButton!
-    
-    @IBAction func sensorButtonAction(_ sender: UIButton) {
-        createAndPresentSensorButtonActionSheet()
-    }
-    
-    @IBOutlet weak var preSnoozeButtonOutlet: UIButton!
-    
-    @IBAction func preSnoozeButtonAction(_ sender: UIButton) {
-        // opens the SnoozeViewController, see storyboard
-    }
     
     /// outlet for label that shows how many minutes ago and so on
     @IBOutlet weak var minutesLabelOutlet: UILabel!
@@ -337,6 +338,12 @@ final class RootViewController: UIViewController {
         segmentedControlStatisticsDaysView.isHidden = !UserDefaults.standard.showStatistics
         optionalSpacerView.isHidden = UserDefaults.standard.showStatistics
         
+        if inRangeStatisticLabelOutlet.text == "-" {
+            activityMonitorOutlet.isHidden = true
+        } else {
+            activityMonitorOutlet.isHidden = false
+        }
+        
         // update statistics related outlets
         updateStatistics(animatePieChart: true, overrideApplicationState: true)
         
@@ -449,6 +456,20 @@ final class RootViewController: UIViewController {
             segmentedControlStatisticsDays.setTitleTextAttributes([NSAttributedString.Key.foregroundColor: ConstantsUI.segmentedControlSelectedTextColor, NSAttributedString.Key.font: ConstantsUI.segmentedControlFont], for:.selected)
             
         }
+        
+        // if a RTL localization is in use (such as arabic), then correctly align the low (<x) and high (>x) label outlets towards the centre of the (now reversed) horizontal stack views
+        if UIView.userInterfaceLayoutDirection(for: view.semanticContentAttribute) == UIUserInterfaceLayoutDirection.rightToLeft {
+            lowLabelOutlet.textAlignment = .right
+            lowTitleLabelOutlet.textAlignment = .left
+            highLabelOutlet.textAlignment = .right
+            highTitleLabelOutlet.textAlignment = .left
+        } else {
+            lowLabelOutlet.textAlignment = .left
+            lowTitleLabelOutlet.textAlignment = .right
+            highLabelOutlet.textAlignment = .left
+            highTitleLabelOutlet.textAlignment = .right
+        }
+        
         
         // enable or disable the buttons 'sensor' and 'calibrate' on top, depending on master or follower
         changeButtonsStatusTo(enabled: UserDefaults.standard.isMaster)
@@ -1127,11 +1148,11 @@ final class RootViewController: UIViewController {
         
         // remove titles from tabbar items
         self.tabBarController?.cleanTitles()
-        
+        	
         // set texts for buttons on top
-        calibrateButtonOutlet.setTitle(Texts_HomeView.calibrationButton, for: .normal)
-        preSnoozeButtonOutlet.setTitle(Texts_HomeView.snoozeButton, for: .normal)
-        sensorButtonOutlet.setTitle(Texts_HomeView.sensor, for: .normal)
+        preSnoozeToolbarButtonOutlet.title = Texts_HomeView.snoozeButton
+        sensorToolbarButtonOutlet.title = Texts_HomeView.sensor
+        calibrateToolbarButtonOutlet.title = Texts_HomeView.calibrationButton
         
         chartLongPressGestureRecognizerOutlet.delegate = self
         chartPanGestureRecognizerOutlet.delegate = self
@@ -1818,11 +1839,11 @@ final class RootViewController: UIViewController {
     private func changeButtonsStatusTo(enabled: Bool) {
         
         if enabled {
-            sensorButtonOutlet.enable()
-            calibrateButtonOutlet.enable()
+            sensorToolbarButtonOutlet.enable()
+            calibrateToolbarButtonOutlet.enable()
         } else {
-            sensorButtonOutlet.disable()
-            calibrateButtonOutlet.disable()
+            sensorToolbarButtonOutlet.disable()
+            calibrateToolbarButtonOutlet.disable()
         }
         
     }
@@ -1896,8 +1917,15 @@ final class RootViewController: UIViewController {
         
         // let's clean up statistics UI before calling the Statistics Manager
         // we'll also show the activity monitor and change the statistics label colors to gray
+        if self.averageStatisticLabelOutlet.text == "-" {
+            self.activityMonitorOutlet.isHidden = true
+        } else {
+            self.activityMonitorOutlet.isHidden = false
+        }
+        
         self.pieChartOutlet.clear()
-        self.activityMonitorOutlet.isHidden = false
+        self.pieChartLabelOutlet.text = ""
+        
         self.lowStatisticLabelOutlet.textColor = UIColor.lightGray
         self.lowStatisticLabelOutlet.text = "-"
         self.inRangeStatisticLabelOutlet.textColor = UIColor.lightGray
@@ -1907,7 +1935,7 @@ final class RootViewController: UIViewController {
         self.averageStatisticLabelOutlet.text = "-"
         self.a1CStatisticLabelOutlet.text = "-"
         self.cVStatisticLabelOutlet.text = "-"
-        self.timePeriodLabelOutlet.text = "---"
+        self.timePeriodLabelOutlet.text = "- - -"
         
         
         // statisticsManager will calculate the statistics in background thread and call the callback function in the main thread
