@@ -3999,8 +3999,8 @@
 				CODE_SIGN_ENTITLEMENTS = "xDrip4iOS Widget/xDrip4iOS Widget.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = M8UYM6388E;
 				CURRENT_PROJECT_VERSION = 4159;
+				DEVELOPMENT_TEAM = M8UYM6388E;
 				INFOPLIST_FILE = "xDrip4iOS Widget/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -4181,8 +4181,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 4.6.2;
 				MARKETING_VERSION = 4.6.4;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rcg.xdripswift;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OBJC_BRIDGING_HEADER = "xdrip/xdrip-Bridging-Header.h";
@@ -4211,8 +4211,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 4.6.4;
 				MARKETING_VERSION = 4.6.2;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rcg.xdripswift;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OBJC_BRIDGING_HEADER = "xdrip/xdrip-Bridging-Header.h";
