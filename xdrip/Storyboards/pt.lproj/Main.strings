@@ -149,7 +149,7 @@
 /* Class = "UIButton"; normalTitle = "OK"; ObjectID = "uqL-UP-KZF"; */
 "uqL-UP-KZF.normalTitle" = "OK";
 
-/* Class = "UILabel"; text = "x mins ago"; ObjectID = "uyn-2k-K74"; */
+/* Class = "UILabel"; text = "x min"; ObjectID = "uyn-2k-K74"; */
 "uyn-2k-K74.text" = "x mins atrás";
 
 /* Class = "UILabel"; text = "Title"; ObjectID = "vbi-WE-Mvc"; */

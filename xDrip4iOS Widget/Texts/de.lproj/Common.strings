@@ -17,4 +17,4 @@
 "common_mgdl" = "mg/dl";
 
 /// where it say how old the reading is, 'x minutes ago', literaly translation of 'ago'
-"ago" = "her";
+"ago" = "";
