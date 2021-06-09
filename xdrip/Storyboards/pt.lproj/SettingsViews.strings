@@ -101,3 +101,4 @@
 "nslog" = "NSLog";
 "developerSettings" = "Definições de Programador";
 "settingsviews_sectiontitlehomescreen" = "Ecrã Inicial";
+"showClockWhenScreenIsLocked" = "Mostrar Relógio quando Bloqueado?";
