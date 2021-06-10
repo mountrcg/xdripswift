@@ -93,7 +93,7 @@ enum Texts_HomeView {
     }()
     
     static let ago:String = {
-        return NSLocalizedString("ago", tableName: filename, bundle: Bundle.main, value: "ago", comment: "for home view, where it say how old the reading is, 'x minutes ago', literaly translation of 'ago'")
+        return NSLocalizedString("ago", tableName: filename, bundle: Bundle.main, value: "", comment: "for home view, where it say how old the reading is, 'x minutes ago', literaly translation of 'ago'")
     }()
 
     static let licenseInfo:String = {
