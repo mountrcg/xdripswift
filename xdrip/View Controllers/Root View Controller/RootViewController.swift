@@ -2024,13 +2024,13 @@ final class RootViewController: UIViewController {
                 // the idea is to avoid that the easter egg appears after just a few minutes of being in range (at 00:15hrs for example) as this has no merit.
                 
                 // open up the inside of the chart so that we can fit the smiley face in
-                self.pieChartOutlet.innerRadius = 16
+                self.pieChartOutlet.innerRadius = 18
                 self.pieChartOutlet.models = [
                     PieSliceModel(value: 1, color: ConstantsStatistics.pieChartInRangeSliceColor)
                 ]
                 
-                self.pieChartLabelOutlet.font = UIFont.boldSystemFont(ofSize: 26)
-                self.pieChartLabelOutlet.text = "😎"
+                self.pieChartLabelOutlet.font = UIFont.boldSystemFont(ofSize: 30)
+                self.pieChartLabelOutlet.text = "🧞‍♀️"
                 
             } else {
                 
