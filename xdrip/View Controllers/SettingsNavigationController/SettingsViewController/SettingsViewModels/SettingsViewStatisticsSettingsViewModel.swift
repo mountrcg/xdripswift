@@ -132,13 +132,7 @@ struct SettingsViewStatisticsSettingsViewModel:SettingsViewModelProtocol {
         
         switch setting {
             
-        case .showStatistics:
-            return UITableViewCell.AccessoryType.none
-            
-        case .useStandardStatisticsRange:
-            return UITableViewCell.AccessoryType.none
-            
-        case .useIFCCA1C:
+        case .showStatistics, .useStandardStatisticsRange, .useIFCCA1C:
             return UITableViewCell.AccessoryType.none
             
         }
