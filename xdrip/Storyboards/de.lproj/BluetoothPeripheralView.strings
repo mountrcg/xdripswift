@@ -12,7 +12,7 @@
 "scan" = "Scannen";
 
 /// cell text, where user can select to reset a transmitter at next connect. Only for Dexcom
-"resetRequired" = "Transmitter zurücksetzten?";
+"resetRequired" = "Transmitter zurücksetzen?";
 
 /// text in status row, when not connected and app is not scanning
 "notTryingToConnect" = "Es wird nicht gescannt";
@@ -54,7 +54,7 @@
 "confirmDeletionPeripheral" = "Möchten Sie das Gerät löschen?";
 
 /// text in status row, if scanning ongoing
-"scanning" = "Am scannnen";
+"scanning" = "Am scannen";
 
 /// cell text, shows when last reset was done, if known. Only for Dexcom
 "lastReset" = "Zuletzt zurückgesetzt:";
