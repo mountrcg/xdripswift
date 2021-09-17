@@ -29,9 +29,9 @@ enum ConstantsUI {
     static let screenLockIconColor = UIColor.gray
     
     /// value label font size when the screen is in normal operation mode
-    static let valueLabelFontSizeNormal = UIFont.systemFont(ofSize: 90)
+    static let valueLabelFontSizeNormal = UIFont.systemFont(ofSize: 45)
     /// value label font bigger size when the screen is in screen lock mode
-    static let valueLabelFontSizeScreenLock = UIFont.systemFont(ofSize: 120)
+    static let valueLabelFontSizeScreenLock = UIFont.systemFont(ofSize: 60)
     
     /// clock label font color. It shouldn't be too white or it could be distracting at night.
     static let clockLabelColor = UIColor.lightGray
