@@ -19,7 +19,7 @@ class Libre2BLEUtilities {
             UInt8((time >> 16) & 0xFF),
             UInt8((time >> 24) & 0xFF)
         ]
-
+        
         // Then we need data of activation command and enable command that were sent to sensor
         let ad = PreLibre2.usefulFunction(sensorUID: sensorUID, x: 0x1b, y: 0x1b6a)
         let ed = PreLibre2.usefulFunction(sensorUID: sensorUID, x: 0x1e, y: UInt16(enableTime & 0xFFFF) ^ UInt16(info[5], info[4]))
@@ -93,7 +93,7 @@ class Libre2BLEUtilities {
         
         return result
     }
-
+    
     /// - returns:
     ///     - array of GlucoseData. Returns empty array if the latest value is 0.0 for any reason
     ///     - restricts to reading 8 values from data, the 8th value differens only 1 minute from its previous value. (while the others differ 2 minutes). This allows us to sync with previously stored values
@@ -103,7 +103,7 @@ class Libre2BLEUtilities {
         
         // how many values to store in rawGlucoseValues, which is not equal to the amount of values read
         // because Libre 2 gives reading every 2 minutes, then 15
-        let amountOfValuesToStore = 8
+        let amountOfValuesToStore = 16
         
         var bleGlucose: [GlucoseData] = []
         
@@ -148,25 +148,47 @@ class Libre2BLEUtilities {
             
         }
         
+        trace("=====in parseBLEData %{public}@", log: log, category: ConstantsLog.categoryLibreDataParser, type: .debug, Date().toString(timeStyle: .long, dateStyle: .long))
+        
+        if UserDefaults.standard.addDebugLevelLogsInTraceFileAndNSLog {
+            trace("=====in parseBLEData; rawGlucoseValues before appending previous values =  %{public}@", log: log, category: ConstantsLog.categoryLibreDataParser, type: .debug, rawGlucoseValues.reduce("", { $0 + "; " + $1.description.replacingOccurrences(of: ".", with: ",")}))
+        }
+        
+        if UserDefaults.standard.addDebugLevelLogsInTraceFileAndNSLog, let firstRawTemperatureValue = rawTemperatureValues.first {
+            trace("=====in parseBLEData; firstRawTemperatureValue = %{public}@", log: log, category: ConstantsLog.categoryLibreDataParser, type: .debug, firstRawTemperatureValue.description.replacingOccurrences(of: ".", with: ","))
+        }
+        
+        if UserDefaults.standard.addDebugLevelLogsInTraceFileAndNSLog, let previousRawGlucoseValues = UserDefaults.standard.previousRawGlucoseValues {
+            trace("=====in parseBLEData; UserDefaults.standard.previousRawGlucoseValues =     %{public}@", log: log, category: ConstantsLog.categoryLibreDataParser, type: .debug, previousRawGlucoseValues.reduce("", { $0 + "; " + $1.description.replacingOccurrences(of: ".", with: ",") }))
+        }
+        
         // append previous rawvalues
         appendPreviousValues(to: &rawGlucoseValues, rawTemperatureValues: &rawTemperatureValues, temperatureAdjustmentValues: &temperatureAdjustmentValues)
-
+        
+        if UserDefaults.standard.addDebugLevelLogsInTraceFileAndNSLog {
+            trace("=====in parseBLEData; rawGlucoseValues after appending previous values =   %{public}@", log: log, category: ConstantsLog.categoryLibreDataParser, type: .debug, rawGlucoseValues.reduce("", { $0 + "; " + $1.description.replacingOccurrences(of: ".", with: ",") }))
+        }
+        
         // check if the rawGlucoseValues and the previousRawGlucoseValues have at least 5 equal values, if so this is an expired sensor that keeps sending the same values, in that case no further processing
         if let previousRawGlucoseValues = UserDefaults.standard.previousRawGlucoseValues {
             if rawGlucoseValues.hasEqualValues(howManyToCheck: 5, otherArray: previousRawGlucoseValues) {
                 
-                trace("in parseBLEData, did detect flat values, returning empty GlucoseData array", log: log, category: ConstantsLog.categoryLibreDataParser, type: .info)
+                trace("=====in parseBLEData; did detect flat values, returning empty GlucoseData array", log: log, category: ConstantsLog.categoryLibreDataParser, type: .info)
                 
                 return ([GlucoseData](), wearTimeMinutes)
                 
             }
         }
-
-        // store current values (appended with previous values) in userdefaults prevous values
+        
+        // store current values (appended with previous values) in userdefaults previous values
         UserDefaults.standard.previousRawGlucoseValues = Array(rawGlucoseValues[0..<(min(rawGlucoseValues.count, ConstantsLibreSmoothing.amountOfPreviousReadingsToStore))])
         UserDefaults.standard.previousTemperatureAdjustmentValues = Array(temperatureAdjustmentValues[0..<(min(rawGlucoseValues.count, ConstantsLibreSmoothing.amountOfPreviousReadingsToStore))])
         UserDefaults.standard.previousRawTemperatureValues = Array(rawTemperatureValues[0..<(min(rawGlucoseValues.count, ConstantsLibreSmoothing.amountOfPreviousReadingsToStore))])
-
+        
+        if UserDefaults.standard.addDebugLevelLogsInTraceFileAndNSLog, let previousRawGlucoseValues = UserDefaults.standard.previousRawGlucoseValues {
+            trace("=====in parseBLEData; UserDefaults.standard.previousRawGlucoseValues after setting =     %{public}@", log: log, category: ConstantsLog.categoryLibreDataParser, type: .debug, previousRawGlucoseValues.reduce("", { $0 + "; " + $1.description.replacingOccurrences(of: ".", with: ",") }))
+        }
+        
         // create glucosedata for each known rawglucose and add to returnvallue
         for (index, _) in rawGlucoseValues.enumerated() {
             
@@ -174,12 +196,21 @@ class Libre2BLEUtilities {
             
             bleGlucose.append(GlucoseData(timeStamp: libreMeasurement.date, glucoseLevelRaw: (libreMeasurement.temperatureAlgorithmGlucose > 0 ? libreMeasurement.temperatureAlgorithmGlucose : Double(libreMeasurement.rawGlucose) * ConstantsBloodGlucose.libreMultiplier)))
             
-
+            
         }
         
-        // sensor gives values only every 1 minute but it gives only 4 readings for the last 8 minutes, ie with a gap of 1 minute, we try to fill those gaps using previous sessions, but this may not always be successful, (eg if there's been a disconnection of 2 minutes). So let's fill missing gaps of maximum 1 value
-        bleGlucose.fill0Gaps(maxGapWidth: 1)
-
+        if UserDefaults.standard.addDebugLevelLogsInTraceFileAndNSLog {
+            trace("=====in parseBLEData; bleGlucose before filling gaps =                     %{public}@", log: log, category: ConstantsLog.categoryLibreDataParser, type: .debug, bleGlucose.reduce("", { $0 + "; " + $1.glucoseLevelRaw.description.replacingOccurrences(of: ".", with: ",") }))
+        }
+        
+        // sensor gives values only every 1 minute but it gives only 7 readings for the last 16 minutes, with gaps between 1 and 4 minutes Try to fill those gaps using previous sessions, but this may not always be successful, (eg if there's been a disconnection of 2 minutes). So let's fill missing gaps
+        // in case smoothing is used, then maximum gap is 4, if no smoothing is used, then maximum gap is 1
+        bleGlucose.fill0Gaps(maxGapWidth: UserDefaults.standard.smoothLibreValues ? 4:1)
+        
+        if UserDefaults.standard.addDebugLevelLogsInTraceFileAndNSLog {
+            trace("=====in parseBLEData; bleGlucose after filling gaps =                      %{public}@", log: log, category: ConstantsLog.categoryLibreDataParser, type: .debug, bleGlucose.reduce("", { $0 + "; " + $1.glucoseLevelRaw.description.replacingOccurrences(of: ".", with: ",") }))
+        }
+        
         // if first (most recent) value has rawGlucose 0.0 then return empty array
         if let first = bleGlucose.first {
             if first.glucoseLevelRaw == 0.0 {
@@ -195,10 +226,18 @@ class Libre2BLEUtilities {
             
         }
         
+        if UserDefaults.standard.addDebugLevelLogsInTraceFileAndNSLog {
+            trace("=====in parseBLEData; bleGlucose after smoothing =                         %{public}@", log: log, category: ConstantsLog.categoryLibreDataParser, type: .debug, bleGlucose.reduce("", { $0 + "; " + $1.glucoseLevelRaw.description.replacingOccurrences(of: ".", with: ",") }))
+        }
+        
         // there's still possibly 0 values, eg first or last
         // filter out readings with glucoseLevelRaw = 0, if any
         bleGlucose = bleGlucose.filter({return $0.glucoseLevelRaw > 0.0})
-
+        
+        if UserDefaults.standard.addDebugLevelLogsInTraceFileAndNSLog {
+            trace("=====in parseBLEData; bleGlucose after filtering out 0 values =            %{public}@", log: log, category: ConstantsLog.categoryLibreDataParser, type: .debug, bleGlucose.reduce("", { $0 + "; " + $1.glucoseLevelRaw.description.replacingOccurrences(of: ".", with: ",") }))
+        }
+        
         return (bleGlucose, wearTimeMinutes)
         
     }
@@ -238,11 +277,63 @@ class Libre2BLEUtilities {
                     
                     if rawGlucoseValues[index] == previousRawGlucoseValues[indexStored] && rawTemperatureValues[index] == previousRawTemperatureValues[indexStored] {
                         
-                        // matching value found
-                        indexOffset = indexStored - index
+                        // possibly matching value found, but to be sure, let's check 2 more values
+                        // do this per two values, because Libre 2 only gives every 2 readings
+                        let maxAdditionalValuesToCheck = 3 + 1 // actual max is 4
+                        var additionalIndexOffset = 1
                         
-                        // stop searching
-                        break rawGlucoseValuesloop
+                        // if previousRawGlucoseValues.count < 9, then don't further check, consider this as a match, otherwise we never get out of the next loop
+                        if previousRawGlucoseValues.count >= 9 {
+                            
+                            loop1: while additionalIndexOffset <  maxAdditionalValuesToCheck
+                                    &&
+                                    indexStored + additionalIndexOffset < previousRawGlucoseValues.count
+                                    &&
+                                    index + additionalIndexOffset < rawGlucoseValues.count {
+                                
+                                if rawGlucoseValues[index + additionalIndexOffset] > 0 && previousRawGlucoseValues[indexStored + additionalIndexOffset] > 0 {
+                                    
+                                    if rawGlucoseValues[index + additionalIndexOffset] != previousRawGlucoseValues[indexStored + additionalIndexOffset]
+                                        ||
+                                        rawTemperatureValues[index + additionalIndexOffset] != previousRawTemperatureValues[indexStored + additionalIndexOffset] {
+                                        
+                                        // no match found
+                                        break loop1
+                                        
+                                    } else {
+                                        
+                                        // or a value in rawGlucoseValues is 0 or a value in previousRawGlucoseValues is 0, go to the next
+                                        additionalIndexOffset += 1
+                                        
+                                    }
+                                    
+                                } else {
+                                    
+                                    // or a value in rawGlucoseValues is 0 or a value in previousRawGlucoseValues is 0, go to the next
+                                    additionalIndexOffset += 1
+                                    
+                                }
+                                
+                            }
+                            
+                        } else {
+                            
+                            // consider this as a match
+                            additionalIndexOffset = maxAdditionalValuesToCheck
+                            
+                        }
+                        
+                        // if additionalIndexOffset == maxAdditionalValuesToCheck that means, we found at least 3 indexes where previousRawGlucoseValues matches the value in previousRawGlucoseValues
+                        if additionalIndexOffset >= maxAdditionalValuesToCheck {
+                            
+                            // matching value found
+                            indexOffset = indexStored - index
+                            
+                            // stop searching
+                            break rawGlucoseValuesloop
+                            
+                        }
+                        
                         
                     }
                     
@@ -268,7 +359,7 @@ class Libre2BLEUtilities {
             
             // now append additional values present in previousRawGlucoseValues if any
             if !(previousRawGlucoseValues.count < rawGlucoseValues.count + indexOffset) {
-
+                
                 let rangeForRemainingValues = (rawGlucoseValues.count + indexOffset)..<previousRawGlucoseValues.count
                 
                 let remainingPreviousRawGlucoseValues = Array(previousRawGlucoseValues[rangeForRemainingValues])
@@ -282,10 +373,9 @@ class Libre2BLEUtilities {
                     temperatureAdjustmentValues.append(remainingTemperatureAdjustmentValues[index])
                     
                 }
-
+                
             }
             
         }
         
-    }
-}
+    }}

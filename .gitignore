@@ -1,3 +1,7 @@
+#######
+# config files, to be edited by developer 
+xDripConfigOverride.xcconfig
+
 .DS_Store
 UserInterfaceState.xcuserstate
 iBreakpoints_v2.xcbkptlist
