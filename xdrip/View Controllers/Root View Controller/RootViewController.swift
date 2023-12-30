@@ -2895,12 +2895,12 @@ final class RootViewController: UIViewController, ObservableObject {
                     // let's add a Christmas holiday easter egg. Because... why not?
                     if components.month == 12 && (components.day! >= 23 && components.day! <= 31) {
                         
-                        self.pieChartLabelOutlet.text = "🎁"
+                        self.pieChartLabelOutlet.text = "🧞‍♀️"
                         
                     } else {
                         
                         // ok, so it's not Chistmas, but we can still be happy about a 100% TIR
-                        self.pieChartLabelOutlet.text = "😎"
+                        self.pieChartLabelOutlet.text = "🧞‍♂️"
                         
                     }
                 }
