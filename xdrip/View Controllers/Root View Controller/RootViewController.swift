@@ -3277,7 +3277,6 @@ final class RootViewController: UIViewController, ObservableObject {
             
             switch UserDefaults.standard.followerDataSourceType {
             case .nightscout:
-                
                 if !UserDefaults.standard.nightscoutEnabled {
                     dataSourceSensorMaxAgeOutlet.textColor = .systemRed
                     dataSourceSensorMaxAgeOutlet.text = Texts_HomeView.nightscoutNotEnabled
@@ -3298,11 +3297,13 @@ final class RootViewController: UIViewController, ObservableObject {
                     dataSourceSensorMaxAgeOutlet.text = nightscoutUrlString
                 }
                 
-            case .libreLinkUp:
-                
+            case .libreLinkUp, .libreLinkUpRussia:
                 if UserDefaults.standard.libreLinkUpEmail == nil || UserDefaults.standard.libreLinkUpPassword == nil {
                     dataSourceSensorMaxAgeOutlet.textColor = .systemRed
                     dataSourceSensorMaxAgeOutlet.text = Texts_HomeView.libreLinkUpAccountCredentialsMissing
+                } else if UserDefaults.standard.libreLinkUpPreventLogin {
+                    dataSourceSensorMaxAgeOutlet.textColor = .systemRed
+                    dataSourceSensorMaxAgeOutlet.text = Texts_HomeView.libreLinkUpAccountCredentialsInvalid
                 }
             }
         }
@@ -3995,7 +3996,7 @@ extension RootViewController: UNUserNotificationCenterDelegate {
             // this will verify if it concerns an alert notification, if not pickerviewData will be nil
         } else if let pickerViewData = alertManager?.userNotificationCenter(center, willPresent: notification, withCompletionHandler: completionHandler) {
             
-            PickerViewController.displayPickerViewController(pickerViewData: pickerViewData, parentController: self)
+            PickerViewControllerModal.displayPickerViewController(pickerViewData: pickerViewData, parentController: self)
             
         }  else if notification.request.identifier == ConstantsNotifications.notificationIdentifierForVolumeTest {
             
@@ -4043,7 +4044,7 @@ extension RootViewController: UNUserNotificationCenterDelegate {
             if let pickerViewData = alertManager?.userNotificationCenter(center, didReceive: response) {
                 
                 trace("     userNotificationCenter didReceive, user pressed an alert notification to open the app", log: log, category: ConstantsLog.categoryRootView, type: .info)
-                PickerViewController.displayPickerViewController(pickerViewData: pickerViewData, parentController: self)
+                PickerViewControllerModal.displayPickerViewController(pickerViewData: pickerViewData, parentController: self)
                 
             } else {
                 // it as also not an alert notification that the user clicked, there might come in other types of notifications in the future
@@ -4096,7 +4097,7 @@ extension RootViewController: FollowerDelegate {
                             _ = followManager.createBgReading(followGlucoseData: followGlucoseData)
                         }
                         
-                    case .libreLinkUp:
+                    case .libreLinkUp, .libreLinkUpRussia:
                         
                         if let followManager = libreLinkUpFollowManager {
                             _ = followManager.createBgReading(followGlucoseData: followGlucoseData)

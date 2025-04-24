@@ -136,12 +136,14 @@ jobs:
     
     # Keep repository "alive": add empty commits to ALIVE_BRANCH after "time_elapsed" days of inactivity to avoid inactivation of scheduled workflows
     - name: Keep alive
-      if: |
-        needs.check_alive_and_permissions.outputs.WORKFLOW_PERMISSION == 'true' &&
-        (vars.SCHEDULED_BUILD != 'false' || vars.SCHEDULED_SYNC != 'false')
-      uses: gautamkrishnar/keepalive-workflow@v1 # using the workflow with default settings
-      with:
-        time_elapsed: 20 # Time elapsed from the previous commit to trigger a new automated commit (in days)
+      run: |
+        echo "Keep Alive temporarily removed while gautamkrishnar/keepalive-workflow is not available"
+    #  if: |
+    #    needs.check_alive_and_permissions.outputs.WORKFLOW_PERMISSION == 'true' &&
+    #    (vars.SCHEDULED_BUILD != 'false' || vars.SCHEDULED_SYNC != 'false')
+    #  uses: gautamkrishnar/keepalive-workflow@v1 # using the workflow with default settings
+    #  with:
+    #    time_elapsed: 20 # Time elapsed from the previous commit to trigger a new automated commit (in days)
     
     - name: Show scheduled build configuration message
       if: needs.check_alive_and_permissions.outputs.WORKFLOW_PERMISSION != 'true'
@@ -156,7 +158,7 @@ jobs:
   build:
     name: Build
     needs: [validate, check_alive_and_permissions, check_latest_from_upstream]
-    runs-on: macos-14
+    runs-on: macos-15
     permissions:
       contents: write
     if: | # runs if started manually, or if sync schedule is set and enabled and scheduled on the first Saturday each month, or if sync schedule is set and enabled and new commits were found
@@ -167,7 +169,7 @@ jobs:
         )
     steps:
       - name: Select Xcode version
-        run: "sudo xcode-select --switch /Applications/Xcode_15.3.app/Contents/Developer"
+        run: "sudo xcode-select --switch /Applications/Xcode_16.2.app/Contents/Developer"
       
       - name: Checkout Repo for syncing
         if: |
