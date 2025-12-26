@@ -1,38 +1,42 @@
 import UIKit
 import os
 import Foundation
+import SafariServices
 
 fileprivate enum Setting:Int, CaseIterable {
     
     /// should readings be uploaded or not
     case nightscoutEnabled = 0
     
+    /// open web view with Nightscout URL
+    case openNightscout = 1
+    
     /// nightscout follower type
-    case nightscoutFollowType = 1
+    case nightscoutFollowType = 2
     
     /// nightscout url
-    case nightscoutUrl = 2
+    case nightscoutUrl = 3
     
     /// nightscout api key
-    case nightscoutAPIKey = 3
+    case nightscoutAPIKey = 4
     
     /// nightscout api key
-    case token = 4
+    case token = 5
     
     /// port
-    case port = 5
+    case port = 6
     
     /// to allow testing explicitly
-    case testUrlAndAPIKey = 6
+    case testUrlAndAPIKey = 7
     
     /// should sensor start time be uploaded to NS yes or no
-    case uploadSensorStartTime = 7
+    case uploadSensorStartTime = 8
     
     /// use nightscout schedule or not
-    case useSchedule = 8
+    case useSchedule = 9
     
     /// open uiviewcontroller to edit schedule
-    case schedule = 9
+    case schedule = 10
     
 }
 
@@ -193,6 +197,34 @@ class SettingsViewNightscoutSettingsViewModel {
         
     }
     
+    // open a Safari web view with the provided URL
+    private func openWeb(_ url: URL) {
+        let vc = SFSafariViewController(url: url)
+        vc.modalPresentationStyle = .pageSheet
+        DispatchQueue.main.async {
+            self.topViewController()?.present(vc, animated: true)
+        }
+    }
+    
+    // returns the view controller on the top of the navigation stack
+    private func topViewController(_ base: UIViewController? = {
+        UIApplication.shared.connectedScenes
+            .compactMap {
+                $0 as? UIWindowScene
+            }
+            .flatMap {
+                $0.windows
+            }
+            .first {
+                $0.isKeyWindow
+            }?.rootViewController
+    }()) -> UIViewController? {
+        if let nav = base as? UINavigationController { return topViewController(nav.visibleViewController) }
+        if let tab = base as? UITabBarController, let selected = tab.selectedViewController { return topViewController(selected) }
+        if let presented = base?.presentedViewController { return topViewController(presented) }
+        return base
+    }
+    
 }
 
 /// conforms to SettingsViewModelProtocol for all nightscout settings in the first sections screen
@@ -318,14 +350,14 @@ extension SettingsViewNightscoutSettingsViewModel: SettingsViewModelProtocol {
 
         case .nightscoutAPIKey:
             return SettingsSelectedRowAction.askText(title: Texts_SettingsView.labelNightscoutAPIKey, message:  Texts_SettingsView.giveNightscoutAPIKey, keyboardType: .default, text: UserDefaults.standard.nightscoutAPIKey, placeHolder: nil, actionTitle: nil, cancelTitle: nil, actionHandler: {(apiKey: String) in
-                UserDefaults.standard.nightscoutAPIKey = apiKey.toNilIfLength0()}, cancelHandler: nil, inputValidator: nil)
+                UserDefaults.standard.nightscoutAPIKey = apiKey.trimmingCharacters(in: .whitespaces).toNilIfLength0()}, cancelHandler: nil, inputValidator: nil)
 
         case .port:
-            return SettingsSelectedRowAction.askText(title: Texts_SettingsView.nightscoutPort, message: nil, keyboardType: .numberPad, text: UserDefaults.standard.nightscoutPort != 0 ? UserDefaults.standard.nightscoutPort.description : nil, placeHolder: nil, actionTitle: nil, cancelTitle: nil, actionHandler: {(port: String) in if let port = port.toNilIfLength0() { UserDefaults.standard.nightscoutPort = Int(port) ?? 0 } else {UserDefaults.standard.nightscoutPort = 0}}, cancelHandler: nil, inputValidator: nil)
+            return SettingsSelectedRowAction.askText(title: Texts_SettingsView.nightscoutPort, message: nil, keyboardType: .numberPad, text: UserDefaults.standard.nightscoutPort != 0 ? UserDefaults.standard.nightscoutPort.description : nil, placeHolder: nil, actionTitle: nil, cancelTitle: nil, actionHandler: {(port: String) in if let port = port.trimmingCharacters(in: .whitespaces).toNilIfLength0() { UserDefaults.standard.nightscoutPort = Int(port) ?? 0 } else {UserDefaults.standard.nightscoutPort = 0}}, cancelHandler: nil, inputValidator: nil)
         
         case .token:
             return SettingsSelectedRowAction.askText(title: Texts_SettingsView.nightscoutToken, message:  nil, keyboardType: .default, text: UserDefaults.standard.nightscoutToken, placeHolder: nil, actionTitle: nil, cancelTitle: nil, actionHandler: {(token: String) in
-                UserDefaults.standard.nightscoutToken = token.toNilIfLength0()}, cancelHandler: nil, inputValidator: nil)
+                UserDefaults.standard.nightscoutToken = token.trimmingCharacters(in: .whitespaces).toNilIfLength0()}, cancelHandler: nil, inputValidator: nil)
             
         case .testUrlAndAPIKey:
 
@@ -337,6 +369,24 @@ extension SettingsViewNightscoutSettingsViewModel: SettingsViewModelProtocol {
                 self.testNightscoutCredentials()
                 
                 return .nothing
+            
+        case .openNightscout:
+            if let nightscoutURL = UserDefaults.standard.nightscoutUrl, let url = URL(string: nightscoutURL), var URLComponents = URLComponents(url: url, resolvingAgainstBaseURL: false) {
+                if UserDefaults.standard.nightscoutPort != 0 {
+                    URLComponents.port = UserDefaults.standard.nightscoutPort
+                }
+                
+                // if token not nil, then add also the token
+                if let token = UserDefaults.standard.nightscoutToken {
+                    URLComponents.queryItems = [URLQueryItem(name: "token", value: token)]
+                }
+                
+                if let url = URLComponents.url {
+                    openWeb(url)
+                }
+            }
+            
+            return .nothing
 
         case .useSchedule:
             return .nothing
@@ -358,9 +408,9 @@ extension SettingsViewNightscoutSettingsViewModel: SettingsViewModelProtocol {
         // if nightscout upload not enabled then only first row is shown
         if UserDefaults.standard.nightscoutEnabled {
             
-            // in follower mode, only 6 first rows to be shown : nightscout enabled button, follow type, url, port number, token, api key, option to test
+            // in follower mode, only 6 first rows to be shown : nightscout enabled button, follow type, url, port number, token, api key, option to test and open Nightscout
             if !UserDefaults.standard.isMaster {
-                return 7
+                return 8
             }
             
             // if schedule not enabled then show all rows except the last which is to edit the schedule
@@ -399,6 +449,8 @@ extension SettingsViewNightscoutSettingsViewModel: SettingsViewModelProtocol {
             return Texts_SettingsView.uploadSensorStartTime
         case .testUrlAndAPIKey:
             return Texts_SettingsView.testUrlAndAPIKey
+        case .openNightscout:
+            return Texts_SettingsView.openNightscout
         }
     }
     
@@ -408,6 +460,8 @@ extension SettingsViewNightscoutSettingsViewModel: SettingsViewModelProtocol {
         switch setting {
         case .nightscoutFollowType, .nightscoutUrl, .nightscoutAPIKey, .port, .token, .schedule:
             return .disclosureIndicator
+        case .openNightscout:
+            return UserDefaults.standard.nightscoutUrl == nil ? .none : .disclosureIndicator
         default:
             return .none
         }
@@ -427,6 +481,8 @@ extension SettingsViewNightscoutSettingsViewModel: SettingsViewModelProtocol {
             return UserDefaults.standard.nightscoutPort != 0 ? UserDefaults.standard.nightscoutPort.description : nil
         case .token:
             return UserDefaults.standard.nightscoutToken?.obscured() ?? ""
+        case .openNightscout:
+            return UserDefaults.standard.nightscoutUrl == nil ? Texts_HomeView.nightscoutURLMissing : nil
         default:
             return nil
         }
@@ -437,11 +493,17 @@ extension SettingsViewNightscoutSettingsViewModel: SettingsViewModelProtocol {
         
         switch setting {
         case .nightscoutEnabled:
-            return UISwitch(isOn: UserDefaults.standard.nightscoutEnabled, action: {(isOn: Bool) in UserDefaults.standard.nightscoutEnabled = isOn})
+            return UISwitch(isOn: UserDefaults.standard.nightscoutEnabled, action: {(isOn: Bool) in
+                trace("nightscoutEnabled changed by user to %{public}@", log: self.log, category: ConstantsLog.categorySettingsViewNightscoutSettingsViewModel, type: .info, isOn.description)
+                UserDefaults.standard.nightscoutEnabled = isOn})
         case .useSchedule:
-            return UISwitch(isOn: UserDefaults.standard.nightscoutUseSchedule, action: {(isOn: Bool) in UserDefaults.standard.nightscoutUseSchedule = isOn})
+            return UISwitch(isOn: UserDefaults.standard.nightscoutUseSchedule, action: {(isOn: Bool) in
+                trace("useSchedule changed by user to %{public}@", log: self.log, category: ConstantsLog.categorySettingsViewNightscoutSettingsViewModel, type: .info, isOn.description)
+                UserDefaults.standard.nightscoutUseSchedule = isOn})
         case .uploadSensorStartTime:
-            return UISwitch(isOn: UserDefaults.standard.uploadSensorStartTimeToNS, action: {(isOn: Bool) in UserDefaults.standard.uploadSensorStartTimeToNS = isOn})
+            return UISwitch(isOn: UserDefaults.standard.uploadSensorStartTimeToNS, action: {(isOn: Bool) in
+                trace("uploadSensorStartTime changed by user to %{public}@", log: self.log, category: ConstantsLog.categorySettingsViewNightscoutSettingsViewModel, type: .info, isOn.description)
+                UserDefaults.standard.uploadSensorStartTimeToNS = isOn})
         default:
             return nil
         }

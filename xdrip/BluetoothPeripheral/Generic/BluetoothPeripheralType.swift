@@ -14,19 +14,19 @@ enum BluetoothPeripheralType: String, CaseIterable {
     case M5StickCType = "M5StickC"
     
     /// Libre 2
-    case Libre2Type = "Libre 2 EU / 2+ EU"
+    case Libre2Type = "Libre 2/2+ EU"
     
     /// MiaoMiao
     case MiaoMiaoType = "MiaoMiao"
     
     /// bubble
-    case BubbleType = "Nano / Bubble / Bubble Mini"
+    case BubbleType = "Nano/Bubble/Bubble Mini"
     
     /// Dexcom
-    case DexcomType = "Dexcom G5 / G6 / ONE"
+    case DexcomType = "Dexcom G5/G6/ONE"
     
     /// Dexcom G7
-    case DexcomG7Type = "Dexcom G7 / ONE+ / Stelo"
+    case DexcomG7Type = "Dexcom G7/ONE+/Stelo"
     
     /// DexcomG4
     case DexcomG4Type = "Dexcom G4 (Bridge)"
@@ -204,7 +204,7 @@ enum BluetoothPeripheralType: String, CaseIterable {
         
         switch self {
             
-        case .DexcomType, .BluconType, .DexcomG4Type, .Libre3HeartBeatType, .DexcomG7HeartBeatType:
+        case .DexcomType, .BluconType, .DexcomG4Type, .Libre3HeartBeatType, .DexcomG7Type, .DexcomG7HeartBeatType:
             return true
             
         default:
@@ -242,6 +242,26 @@ enum BluetoothPeripheralType: String, CaseIterable {
             if transmitterId.count != 5 {
                 return Texts_ErrorMessages.TransmitterIDShouldHaveLength5
             }
+            return nil
+            
+        case .DexcomG7Type:
+            // if nothing entered, then that's fine, we'll scan as normal
+            if transmitterId.isEmpty { return nil }
+            
+            if !transmitterId.uppercased().hasPrefix("DX") {
+                return Texts_ErrorMessages.DexcomG7TypeTransmitterIDWrongPattern
+            }
+            
+            // max length for G7 type is 6, but we will allow partial matches to be used
+            if transmitterId.count > 6 {
+                return Texts_ErrorMessages.TransmitterIDShouldHaveMaximumLength6
+            }
+            
+            let regex = try! NSRegularExpression(pattern: "[a-zA-Z0-9]", options: .caseInsensitive)
+            if !transmitterId.validate(withRegex: regex) {
+                return Texts_ErrorMessages.DexcomTransmitterIDInvalidCharacters
+            }
+            
             return nil
             
         case .BluconType:
@@ -310,6 +330,16 @@ enum BluetoothPeripheralType: String, CaseIterable {
         
     }
     
+    /// can we show the transmitter read sucess row?
+    /// basically only show it for CGM transmitters and hide for heartbeat and M5Stack types
+    func canShowTransmitterReadSuccess() -> Bool {
+        switch self.category() {
+        case .CGM:
+            return true
+        default:
+            return false
+        }
+    }
 }
 
 

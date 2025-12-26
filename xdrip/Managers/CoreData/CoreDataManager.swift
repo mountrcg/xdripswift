@@ -88,7 +88,9 @@ public final class CoreDataManager {
                                                               options: options)
             
         } catch {
-            fatalError("Unable to Add Persistent Store")
+            let nsError = error as NSError
+            trace("addPersistentStore failed domain=%{public}@ code=%{public}d desc=%{public}@ info=%{public}@", log: self.log, category: ConstantsLog.categoryCoreDataManager, type: .error, nsError.domain, nsError.code, nsError.localizedDescription, nsError.userInfo)
+            fatalError("Unable to Add Persistent Store: \(nsError.domain) \(nsError.code) \(nsError.localizedDescription)")
         }
     }
     
@@ -106,10 +108,8 @@ public final class CoreDataManager {
     // MARK: - Helper Methods
     
     private func setupCoreDataStack() {
-        // Fetch Persistent Store Coordinator
-        guard let persistentStoreCoordinator = mainManagedObjectContext.persistentStoreCoordinator else {
-            fatalError("Unable to Set Up Core Data Stack")
-        }
+        // Fetch Persistent Store Coordinator directly to avoid nil when using parent/child contexts
+        let persistentStoreCoordinator = self.persistentStoreCoordinator
         
         DispatchQueue.global().async {
             // Add Persistent Store
@@ -196,12 +196,12 @@ public final class CoreDataManager {
         }
         
         privateManagedObjectContext.performAndWait {
-            do {
-                if self.privateManagedObjectContext.hasChanges {
+            if self.privateManagedObjectContext.hasChanges {
+                do {
                     try self.privateManagedObjectContext.save()
+                } catch {
+                    trace("in saveChangesAtTermination, failed to save private context: %{public}@", log: self.log, category: ConstantsLog.categoryCoreDataManager, type: .error, error.localizedDescription)
                 }
-            } catch {
-                trace("in saveChangesAtTermination,  Unable to Save Changes of Private Managed Object Context, error.localizedDescription  = %{public}@", log: self.log, category: ConstantsLog.categoryCoreDataManager, type: .info, error.localizedDescription)
             }
         }
     }

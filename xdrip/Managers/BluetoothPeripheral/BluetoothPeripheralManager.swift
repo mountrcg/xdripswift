@@ -48,7 +48,7 @@ class BluetoothPeripheralManager: NSObject {
             
             if newValue != currentCgmTransmitterAddress {
                 
-                trace("    in didset currentCgmTransmitterAddress", log: self.log, category: ConstantsLog.categoryBluetoothPeripheralManager, type: .info)
+                trace("in didSet currentCgmTransmitterAddress", log: self.log, category: ConstantsLog.categoryBluetoothPeripheralManager, type: .info)
                 
                 cgmTransmitterInfoChanged()
 
@@ -241,8 +241,8 @@ class BluetoothPeripheralManager: NSObject {
                 case .DexcomG7Type:
                     
                     if let dexcomG7 = bluetoothPeripheral as? DexcomG7, let cgmTransmitterDelegate = cgmTransmitterDelegate {
-                        
-                        newTransmitter = CGMG7Transmitter(address: dexcomG7.blePeripheral.address, name: dexcomG7.blePeripheral.name, bluetoothTransmitterDelegate: self, cGMG7TransmitterDelegate: self, cGMTransmitterDelegate: cgmTransmitterDelegate)
+                            
+                        newTransmitter = CGMG7Transmitter(address: dexcomG7.blePeripheral.address, name: dexcomG7.blePeripheral.name, transmitterID: dexcomG7.blePeripheral.transmitterId, bluetoothTransmitterDelegate: self, cGMG7TransmitterDelegate: self, cGMTransmitterDelegate: cgmTransmitterDelegate)
                         
                     } else {
                         
@@ -677,7 +677,7 @@ class BluetoothPeripheralManager: NSObject {
                 fatalError("in createNewTransmitter, DexcomG7Type, cgmTransmitterDelegate is nil")
             }
             
-            return CGMG7Transmitter(address: nil, name: nil, bluetoothTransmitterDelegate: bluetoothTransmitterDelegate ?? self, cGMG7TransmitterDelegate: self, cGMTransmitterDelegate: cgmTransmitterDelegate)
+            return CGMG7Transmitter(address: nil, name: nil, transmitterID: transmitterId, bluetoothTransmitterDelegate: bluetoothTransmitterDelegate ?? self, cGMG7TransmitterDelegate: self, cGMTransmitterDelegate: cgmTransmitterDelegate)
             
         }
         
@@ -786,8 +786,29 @@ class BluetoothPeripheralManager: NSObject {
             callcgmTransmitterInfoChanged = true
         }
         
-        // set bluetoothTransmitter to nil, this will also initiate a disconnect
-        bluetoothTransmitters[index] = nil
+        // make sure any CoreBluetooth delegates/timers are cleared before releasing the transmitter
+        if let transmitter = bluetoothTransmitters[index] {
+            // first ask the transmitter to clear CB delegates/timers
+            transmitter.prepareForRelease()
+            // then request a clean disconnect
+            transmitter.disconnect()
+            // perform the ARC release on the next main runloop tick to avoid racing CB callbacks
+            DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(50)) { [weak self] in
+                guard let self = self else { return }
+                // The array may have been mutated between scheduling and execution, re-validate the index.
+                guard index >= 0 && index < self.bluetoothTransmitters.count else {
+                    trace("in setTransmitterToNilAndCallcgmTransmitterInfoChangedIfNecessary, index %{public}d out of range (count=%{public}d), skipping", log: self.log, category: ConstantsLog.categoryBluetoothPeripheralManager, type: .error, index, self.bluetoothTransmitters.count)
+                    return
+                }
+                self.bluetoothTransmitters[index] = nil
+            }
+        } else {
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                guard index >= 0 && index < self.bluetoothTransmitters.count else { return }
+                self.bluetoothTransmitters[index] = nil
+            }
+        }
         
         if callcgmTransmitterInfoChanged {
             
@@ -1290,7 +1311,7 @@ class BluetoothPeripheralManager: NSObject {
 
                             // create an instance of CGMG7Transmitter, CGMG7Transmitter will automatically try to connect to the dexcomg7 with the address that is stored in bubble
                             // add it to the array of bluetoothTransmitters
-                            bluetoothTransmitters.insert(CGMG7Transmitter(address: dexcomG7.blePeripheral.address, name: dexcomG7.blePeripheral.name, bluetoothTransmitterDelegate: self, cGMG7TransmitterDelegate: self, cGMTransmitterDelegate: cgmTransmitterDelegate), at: index)
+                            bluetoothTransmitters.insert(CGMG7Transmitter(address: dexcomG7.blePeripheral.address, name: dexcomG7.blePeripheral.name, transmitterID: dexcomG7.blePeripheral.transmitterId, bluetoothTransmitterDelegate: self, cGMG7TransmitterDelegate: self, cGMTransmitterDelegate: cgmTransmitterDelegate), at: index)
                             
                             // if CGMG7Transmitter is of type CGM, then assign the address to currentCgmTransmitterAddress, there shouldn't be any other bluetoothPeripherals of type .CGM with shouldconnect = true
                             if bluetoothPeripheralType.category() == .CGM {
