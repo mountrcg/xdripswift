@@ -53,49 +53,42 @@ extension XDripWatchComplication.EntryView {
                     }
                 }
             } else {
+                let isSmall = entry.widgetState.isSmallScreen()
+                let headerFont: Font = .system(size: isSmall ? 16 : 18)
+                let bodyFont: Font = .system(size: isSmall ? 10 : 14)
+
                 VStack(alignment: .center, spacing: 2) {
                     HStack(alignment: .center, spacing: 4) {
                         Image(systemName: "exclamationmark.triangle")
-                            .font(.system(size: entry.widgetState.isSmallScreen() ? 16 : 18)).bold()
-                        
+                            .font(headerFont).bold()
+
                         Text(Texts_WatchComplication.liveDataDisabled)
-                            .font(.system(size: entry.widgetState.isSmallScreen() ? 16 : 18)).bold()
+                            .font(headerFont).bold()
                             .lineLimit(1)
                             .minimumScaleFactor(0.2)
                     }
                     .foregroundStyle(.teal)
                     .padding(0)
-                    
-                    Text(Texts_WatchComplication.goTo)
-                        .font(.system(size: entry.widgetState.isSmallScreen() ? 10 : 14))
-                        .foregroundStyle(.colorPrimary)
-                    
-                    + Text(" \(ConstantsHomeView.applicationName)")
-                        .font(.system(size: entry.widgetState.isSmallScreen() ? 10 : 14)).bold()
-                        .foregroundStyle(.white)
-                    
-                    + Text(" -> ")
-                        .font(.system(size: entry.widgetState.isSmallScreen() ? 10 : 14))
-                        .foregroundStyle(.colorPrimary)
-                    
-                    + Text(Texts_WatchComplication.settings)
-                        .font(.system(size: entry.widgetState.isSmallScreen() ? 10 : 14)).bold()
-                        .foregroundStyle(.white)
-                    
-                    + Text(" -> ")
-                        .font(.system(size: entry.widgetState.isSmallScreen() ? 10 : 14))
-                        .foregroundStyle(.colorPrimary)
-                    
-                    + Text(Texts_WatchComplication.appleWatch + " ")
-                        .font(.system(size: entry.widgetState.isSmallScreen() ? 10 : 14)).bold()
-                        .foregroundStyle(.white)
-                    
-                    + Text(Texts_WatchComplication.toEnable)
-                        .font(.system(size: entry.widgetState.isSmallScreen() ? 10 : 14))
-                        .foregroundStyle(.colorPrimary)
+
+                    instructionsText(bodyFont: bodyFont)
                 }
             }
         }
         .widgetBackground(backgroundView: Color.clear)
+    }
+
+    private func instructionsText(bodyFont: Font) -> Text {
+        let plain = Color("colorPrimary")
+        let emph = Color.white
+
+        let goTo = Text(Texts_WatchComplication.goTo).font(bodyFont).foregroundColor(plain)
+        let app = Text(" \(ConstantsHomeView.applicationName)").font(bodyFont).bold().foregroundColor(emph)
+        let arrow1 = Text(" -> ").font(bodyFont).foregroundColor(plain)
+        let settings = Text(Texts_WatchComplication.settings).font(bodyFont).bold().foregroundColor(emph)
+        let arrow2 = Text(" -> ").font(bodyFont).foregroundColor(plain)
+        let watch = Text(Texts_WatchComplication.appleWatch + " ").font(bodyFont).bold().foregroundColor(emph)
+        let toEnable = Text(Texts_WatchComplication.toEnable).font(bodyFont).foregroundColor(plain)
+
+        return goTo + app + arrow1 + settings + arrow2 + watch + toEnable
     }
 }
